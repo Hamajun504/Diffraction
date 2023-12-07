@@ -27,19 +27,25 @@ public:
 Screen::Screen(size_t Nx, size_t Ny, float scale): 
     field_m(Nx, std::vector<complex<double>>(Ny, 0)), shape_m(Nx, Ny), scale_m(scale) {}
 
-void Screen::evaluate_phase_in_point(size_t x, size_t y, const Source& s)
+void Screen::evaluate_phase_in_point(size_t y, size_t z, const Source& s)
 {
-    double sin_phi_z_sqr = scale_m * scale_m * x * y / (shape_m.first * shape_m.first);
-    double sin_phi_y_sqr = scale_m * scale_m * x * y / (shape_m.second * shape_m.second);
-    double cos_phi_y_sqr = 1 - sin_phi_y_sqr;
+    double ny, nz;
+    ny = y / shape_m.first * s.wavelength() / s.size().first * scale_m;
+    nz = z / shape_m.second * s.wavelength() / s.size().first * scale_m;
+    double len = sqrt(1 + ny * ny + nz * nz);
+    ny /= len;
+    nz /= len;
+
     for (size_t i = 0; i < s.shape().first; ++i)
-        for (size_t j; j < s.shape().second; ++j)
-            if (s[i][j])
-            {
-                double dist = cos_phi_y_sqr * sin_phi_z_sqr * (s.size().first * i) * (s.size().first * i) / (s.shape().first * s.shape().first) +
-                    sin_phi_y_sqr * (s.size().second * j) * (s.size().second * j) / (s.shape().second * s.shape().second);
-                field_m[i][j] += std::exp(complex<double>(0, 1) * complex<double>(2 * M_PI / s.wavelength() * dist, 0));
+        for (size_t j = 0; j < s.shape().second; ++j)
+            if (s[i][j]) {
+                double dist = ny * i / s.shape().first * s.size().first +
+                    nz * j / s.shape().second * s.size().second;
+                field_m[y][z] += std::exp(complex<double>(0, 1) * M_PI / s.wavelength() * dist);
             }
+
+    
+
 }
 
 const std::pair<size_t, size_t>& Screen::size() const
