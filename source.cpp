@@ -11,27 +11,29 @@ class Source final
     double wavelength_m;
 
 public:
-    Source(size_t Nx, size_t Ny, double);
+    Source(size_t Nx, size_t Ny, double, double);
 
     const std::pair<size_t, size_t>& shape() const;
 
-    const std::pair<size_t, size_t>& size() const;
+    const std::pair<size_t, size_t> size() const;
 
     const double wavelength() const;
 
     const std::vector<bool>& operator[](size_t) const;
 
+    std::vector<std::vector<bool>>& array() {return field_m;}
+
 };
 
-Source::Source(size_t Nx, size_t Ny, double width): 
-field_m(Nx, std::vector<bool>(Ny, false)), shape_m(Nx, Ny), size_m(width, Ny / Nx * width) {}
+Source::Source(size_t Nx, size_t Ny, double width, double wavelength): 
+    field_m(Nx, std::vector<bool>(Ny, false)), shape_m(Nx, Ny), size_m(width, Ny / Nx * width), wavelength_m(wavelength) {}
 
-const std::pair<size_t, size_t>& Source::size() const
+const std::pair<size_t, size_t>& Source::shape() const
 {
-    return size_m;
+    return shape_m;
 }
 
-const std::pair<size_t, size_t>& Source::size() const
+const std::pair<size_t, size_t> Source::size() const
 {
     return size_m;
 }

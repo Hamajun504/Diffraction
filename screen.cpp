@@ -3,7 +3,7 @@
 #include <utility>
 #include <exception>
 #include <cmath>
-#include <source.cpp>
+#include "source.cpp"
 #pragma once
 using std::size_t, std::complex;
 
@@ -59,4 +59,5 @@ bool Screen::evaluate_phase(const Source& source)
     for (size_t i = 0; i < shape_m.first; ++i)
         for (size_t j = 0; j < shape_m.second; ++j)
             evaluate_phase_in_point(i, j, source);
+    return true;
 }
