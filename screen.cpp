@@ -4,6 +4,7 @@
 #include <exception>
 #include <cmath>
 #include <iostream>
+#include <thread>
 #include "source.cpp"
 #pragma once
 using std::size_t, std::complex;
@@ -16,12 +17,14 @@ class Screen final
 
     void evaluate_intensity_in_point(size_t, size_t, int, int, const Source&);
 
+    void evaluate_intensity_in_row(size_t, const Source&);
+
 public:
     Screen(size_t, size_t, float);
 
     const std::pair<size_t, size_t>& size() const;
 
-    bool evaluate_intensity(const Source&);
+    void evaluate_intensity(const Source&, size_t);
 
     std::vector<std::vector<double>> normalized_intensity() const;
 
@@ -61,21 +64,30 @@ void Screen::evaluate_intensity_in_point(size_t arr_y, size_t arr_z, int y, int 
     field_m[arr_y][arr_z] = norm(field);
 }
 
+void Screen::evaluate_intensity_in_row(size_t i, const Source& source)
+{
+    for (size_t j = 0; j < shape_m.second; ++j) {
+            evaluate_intensity_in_point(i, j,
+                static_cast<int>(i) - static_cast<int>(shape_m.first) / 2, 
+                static_cast<int>(j) - static_cast<int>(shape_m.second) / 2, source);
+        }
+}
+
 const std::pair<size_t, size_t>& Screen::size() const
 {
     return shape_m;
 }
 
 
-bool Screen::evaluate_intensity(const Source& source)
+void Screen::evaluate_intensity(const Source& source, size_t max_threads = 4)
 {
-    for (size_t i = 0; i < shape_m.first; ++i)
-        for (size_t j = 0; j < shape_m.second; ++j) {
-            evaluate_intensity_in_point(i, j,
-                static_cast<int>(i) - static_cast<int>(shape_m.first) / 2, 
-                static_cast<int>(j) - static_cast<int>(shape_m.second) / 2, source);
-        }
-    return true;
+    std::thread threads[max_threads];
+    for (size_t i = 0; i < shape_m.first; i += max_threads) {
+        for (size_t th = 0; th < max_threads; ++th)
+            if (i + th < shape_m.first)
+                threads[th] = std::thread(&Screen::evaluate_intensity_in_row, this, i + th, source);
+        for (auto& th : threads) th.join(); 
+    }  
 }
 
 std::vector<std::vector<double>> Screen::normalized_intensity() const
