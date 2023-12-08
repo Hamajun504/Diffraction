@@ -15,7 +15,7 @@ class Screen final
     std::pair<size_t, size_t> shape_m;
     float scale_m;
 
-    void evaluate_phase_in_point(size_t, size_t, const Source&);
+    void evaluate_phase_in_point(size_t, size_t, int, int, const Source&);
 
 public:
     Screen(size_t, size_t, float);
@@ -31,11 +31,9 @@ public:
 Screen::Screen(size_t Nx, size_t Ny, float scale): 
     field_m(Nx, std::vector<complex<double>>(Ny, 0)), shape_m(Nx, Ny), scale_m(scale) {}
 
-void Screen::evaluate_phase_in_point(size_t y, size_t z, const Source& s)
+void Screen::evaluate_phase_in_point(size_t arr_y, size_t arr_z, int y, int z, const Source& s)
 {
     double ny, nz;
-    //if (y > 40)
-       // std::cout << y * 1.0 / shape_m.first << std::endl;
     ny = y * 1.0 / shape_m.first * s.wavelength() / s.size().first * scale_m;
     nz = z * 1.0 / shape_m.second * s.wavelength() / s.size().first * scale_m;
     double len = sqrt(1 + ny * ny + nz * nz);
@@ -48,7 +46,7 @@ void Screen::evaluate_phase_in_point(size_t y, size_t z, const Source& s)
                 double dist = ny * i / s.shape().first * s.size().first +
                     nz * j / s.shape().second * s.size().second;
                 
-                field_m[y][z] += std::exp(complex<double>(0, 1) * complex<double>(2 * M_PI / s.wavelength() * dist, 0));
+                field_m[arr_y][arr_z] += std::exp(complex<double>(0, 1) * complex<double>(2 * M_PI / s.wavelength() * dist, 0));
             }
 
 }
@@ -63,9 +61,9 @@ bool Screen::evaluate_phase(const Source& source)
 {
     for (size_t i = 0; i < shape_m.first; ++i)
         for (size_t j = 0; j < shape_m.second; ++j) {
-            evaluate_phase_in_point(i, j, source);
-            //if (i > 40)
-              //  std::cout << field_m[i][j] << std::endl;
+            evaluate_phase_in_point(i, j,
+                static_cast<int>(i) - static_cast<int>(shape_m.first) / 2, 
+                static_cast<int>(j) - static_cast<int>(shape_m.second) / 2, source);
         }
     return true;
 }
