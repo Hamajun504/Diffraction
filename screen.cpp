@@ -21,6 +21,8 @@ public:
     const std::pair<size_t, size_t>& size() const;
 
     bool evaluate_phase(const Source&);
+
+    std::vector<std::vector<double>> normalized_intensity() const;
     
 };
 
@@ -60,4 +62,16 @@ bool Screen::evaluate_phase(const Source& source)
         for (size_t j = 0; j < shape_m.second; ++j)
             evaluate_phase_in_point(i, j, source);
     return true;
+}
+
+std::vector<std::vector<double>> Screen::normalized_intensity() const
+{
+    std::vector<std::vector<double>> out;
+    out.resize(field_m.size());
+    for (auto& i : out)
+        i.resize(field_m.size());
+
+    for (size_t i = 0; i < out.size(); ++i)
+        for (size_t j = 0; j < out[0].size(); ++j)
+            out[i][j] = norm(field_m[i][j]);
 }
