@@ -115,7 +115,8 @@ std::vector<std::vector<double>> Screen::normalized_intensity() const
     for (size_t i = 0; i < out.size(); i += max_threads_m) {
         for (size_t th = 0; th < max_threads_m; ++th)
             threads[th] = std::thread(normalize, i + th);
-        for (auto& th : threads) th.join();
+        for (auto& th : threads) 
+            th.join();
     }
     return out;
 }
@@ -127,18 +128,42 @@ std::vector<std::vector<double>> Screen::normalized_log_intensity() const
     for (auto& i : out)
         i.resize(field_m[0].size());
 
+    auto not_normalized = [this, &out](size_t i){
+        for (size_t j = 0; j < out[i].size(); ++j) {
+            out[i][j] = log(1 + field_m[i][j]);
+        }
+    };
+
+    std::thread threads[max_threads_m];
+    for (size_t i = 0; i < out.size(); i += max_threads_m) {
+        for (size_t th = 0; th < max_threads_m; ++th)
+            threads[th] = std::thread(not_normalized, i + th);
+        for (auto& th : threads) 
+            th.join();
+    }
+
     double max = 0;
     for (size_t i = 0; i < out.size(); ++i)
-        for (size_t j = 0; j < out[0].size(); ++j) {
+        for (size_t j = 0; j < out[i].size(); ++j) {
             double l = log(1 + field_m[i][j]);
-            if (max < l) 
-                max = l;
+            if (max < out[i][j]) 
+                max = out[i][j];
         }
 
-    for (size_t i = 0; i < out.size(); ++i)
-        for (size_t j = 0; j < out[0].size(); ++j) {
-            out[i][j] = log(1 + field_m[i][j]) / max * 255;
+    auto normalize = [this, &out, &max](size_t i)
+    {
+        for (size_t j = 0; j < out[i].size(); ++j) {
+            out[i][j] = out[i][j] / max * 255;
         }
+    };
+
+    for (size_t i = 0; i < out.size(); i += max_threads_m) {
+        for (size_t th = 0; th < max_threads_m; ++th)
+            threads[th] = std::thread(normalize, i + th);
+        for (auto& th : threads) 
+            th.join();
+    }
+
     return out;
 }
 
