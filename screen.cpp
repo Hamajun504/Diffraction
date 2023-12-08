@@ -7,7 +7,7 @@
 #include <thread>
 #include "source.cpp"
 #pragma once
-using std::size_t, std::complex;
+using std::complex, std::size_t;
 
 class Screen final
 {
@@ -216,7 +216,7 @@ std::ostream& operator<< (std::ostream& os, const std::vector<std::vector<double
 {
     for (size_t i = 0; i < img.size(); ++i)
         for (size_t j = 0; j < img[i].size(); ++j) {
-            os << img[i][j];
+            os << round(img[i][j]);
             if (j + 1 == img[0].size())
                 os << std::endl;
             else

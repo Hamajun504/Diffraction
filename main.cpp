@@ -4,17 +4,12 @@
 
 int main()
 {
-    Source source(150, 150, 0.001, 500e-9);
-    Screen screen(100, 100, 10);
+    Source source(300, 300, 0.001, 100e-9);
+    Screen screen(200, 200, 10);
 
     auto& arr = source.array();
 
-    for (size_t i = 0; i < arr.size(); ++i)
-        for (size_t j = 0; j < arr[0].size(); ++j)
-        {
-            if (i >= 65 && i < 85)
-                arr[i][j] = true;
-        }
+    source.mark_points({{0, 0}, {0, 300}, {30, 300}, {30, 0}});
     
     screen.evaluate_intensity(source);
 
