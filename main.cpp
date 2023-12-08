@@ -1,10 +1,11 @@
 #include "screen.cpp"
 #include <fstream>
+#include <iostream>
 
 int main()
 {
-    Source source(150, 150, 0.01, 500e-9);
-    Screen screen(100, 100, 10);
+    Source source(150, 150, 0.001, 500e-9);
+    Screen screen(100, 100, 5);
 
     auto& arr = source.array();
 
