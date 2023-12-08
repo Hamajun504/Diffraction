@@ -16,7 +16,7 @@ int main()
                 arr[i][j] = true;
         }
     
-    screen.evaluate_phase(source);
+    screen.evaluate_intensity(source);
 
     std::ofstream out("buffer_image.csv");
     auto image = screen.normalized_intensity();
