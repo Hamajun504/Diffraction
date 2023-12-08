@@ -13,6 +13,7 @@ class Screen final
 {
     std::vector<std::vector<double>> field_m;
     std::pair<size_t, size_t> shape_m;
+    size_t max_threads_m;
     float scale_m;
 
     void evaluate_intensity_in_point(size_t, size_t, int, int, const Source&);
@@ -20,11 +21,11 @@ class Screen final
     void evaluate_intensity_in_row(size_t, const Source&);
 
 public:
-    Screen(size_t, size_t, float);
+    Screen(size_t, size_t, float, size_t);
 
     const std::pair<size_t, size_t>& size() const;
 
-    void evaluate_intensity(const Source&, size_t);
+    void evaluate_intensity(const Source&);
 
     std::vector<std::vector<double>> normalized_intensity() const;
 
@@ -40,8 +41,8 @@ std::ostream& operator<< (std::ostream&, const std::vector<std::vector<double>>&
 
 
 
-Screen::Screen(size_t Nx, size_t Ny, float scale): 
-    field_m(Nx, std::vector<double>(Ny, 0)), shape_m(Nx, Ny), scale_m(scale) {}
+Screen::Screen(size_t Nx, size_t Ny, float scale, size_t max_threads=4): 
+    field_m(Nx, std::vector<double>(Ny, 0)), shape_m(Nx, Ny), scale_m(scale), max_threads_m(max_threads) {}
 
 void Screen::evaluate_intensity_in_point(size_t arr_y, size_t arr_z, int y, int z, const Source& s)
 {
@@ -79,13 +80,12 @@ const std::pair<size_t, size_t>& Screen::size() const
 }
 
 
-void Screen::evaluate_intensity(const Source& source, size_t max_threads = 4)
+void Screen::evaluate_intensity(const Source& source)
 {
-    std::thread threads[max_threads];
-    for (size_t i = 0; i < shape_m.first; i += max_threads) {
-        for (size_t th = 0; th < max_threads; ++th)
-            if (i + th < shape_m.first)
-                threads[th] = std::thread(&Screen::evaluate_intensity_in_row, this, i + th, source);
+    std::thread threads[max_threads_m];
+    for (size_t i = 0; i < shape_m.first; i += max_threads_m) {
+        for (size_t th = 0; th < max_threads_m && i + th < shape_m.first; ++th)
+            threads[th] = std::thread(&Screen::evaluate_intensity_in_row, this, i + th, source);
         for (auto& th : threads) th.join(); 
     }  
 }
@@ -104,10 +104,19 @@ std::vector<std::vector<double>> Screen::normalized_intensity() const
                 max = field_m[i][j];
         }
 
-    for (size_t i = 0; i < out.size(); ++i)
-        for (size_t j = 0; j < out[0].size(); ++j) {
+    auto normalize = [this, &out, &max](size_t i)
+    {
+        for (size_t j = 0; j < out[i].size(); ++j) {
             out[i][j] = field_m[i][j] * 255 / max;
         }
+    };
+
+    std::thread threads[max_threads_m];
+    for (size_t i = 0; i < out.size(); i += max_threads_m) {
+        for (size_t th = 0; th < max_threads_m; ++th)
+            threads[th] = std::thread(normalize, i + th);
+        for (auto& th : threads) th.join();
+    }
     return out;
 }
 
