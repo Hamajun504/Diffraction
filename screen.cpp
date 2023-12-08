@@ -71,7 +71,18 @@ std::vector<std::vector<double>> Screen::normalized_intensity() const
     for (auto& i : out)
         i.resize(field_m.size());
 
+    double max = 0;
     for (size_t i = 0; i < out.size(); ++i)
-        for (size_t j = 0; j < out[0].size(); ++j)
+        for (size_t j = 0; j < out[0].size(); ++j) {
             out[i][j] = norm(field_m[i][j]);
+            if (max < out[i][j]) 
+                max = out[i][j];
+        }
+
+    for (size_t i = 0; i < out.size(); ++i)
+        for (size_t j = 0; j < out[0].size(); ++j) {
+            out[i][j] /= max * 256;
+        }
+    
+    return out;
 }
