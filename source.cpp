@@ -15,7 +15,7 @@ public:
 
     const std::pair<size_t, size_t>& shape() const;
 
-    const std::pair<size_t, size_t> size() const;
+    const std::pair<double, double>& size() const;
 
     const double wavelength() const;
 
@@ -33,7 +33,7 @@ const std::pair<size_t, size_t>& Source::shape() const
     return shape_m;
 }
 
-const std::pair<size_t, size_t> Source::size() const
+const std::pair<double, double>& Source::size() const
 {
     return size_m;
 }
