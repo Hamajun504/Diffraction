@@ -1,6 +1,7 @@
 #include <vector>
 #include <utility>
 #include <iostream>
+#include <thread>
 #pragma once
 
 
@@ -10,6 +11,7 @@ class Source final
     std::pair<size_t, size_t> shape_m;
     std::pair<double, double> size_m;
     double wavelength_m;
+    size_t max_threads_m;
 
     static bool check_polygon(const std::vector<std::pair<int, int>>&);
 
@@ -17,7 +19,7 @@ class Source final
 
 
 public:
-    Source(size_t Nx, size_t Ny, double, double);
+    Source(size_t Nx, size_t Ny, double, double, size_t);
 
     const std::pair<size_t, size_t>& shape() const;
 
@@ -31,8 +33,8 @@ public:
 
 };
 
-Source::Source(size_t Nx, size_t Ny, double width, double wavelength): 
-    field_m(Nx, std::vector<bool>(Ny, false)), shape_m(Nx, Ny), size_m(width, Ny / Nx * width), wavelength_m(wavelength) {}
+Source::Source(size_t Nx, size_t Ny, double width, double wavelength, size_t max_threads=4): 
+    field_m(Nx, std::vector<bool>(Ny, false)), shape_m(Nx, Ny), size_m(width, Ny / Nx * width), wavelength_m(wavelength), max_threads_m(max_threads) {}
 
 const std::pair<size_t, size_t>& Source::shape() const
 {
@@ -100,9 +102,18 @@ bool Source::mark_points(const std::vector<std::pair<size_t, size_t>>& p)
     if (!check_polygon(vers))
         return false;
 
-    for (size_t i = 0; i < field_m.size(); ++i)
+    auto row = [this, &vers](size_t i){
         for (size_t j = 0; j < field_m[i].size(); ++j)
             field_m[i][j] = check_point_in_polygon({i,j}, vers);
+    };
+
+    std::thread threads[max_threads_m];
+    for (size_t i = 0; i < field_m.size(); i += max_threads_m) {
+        for (size_t th = 0; th < max_threads_m; ++th)
+            threads[th] = std::thread(row, i + th);
+        for (size_t th = 0; th < max_threads_m; ++th)
+            threads[th].join();
+    }
     
     return true;
 }
