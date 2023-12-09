@@ -4,14 +4,12 @@
 
 int main()
 {
-    Source source(300, 300, 0.001, 100e-9);
-    Screen screen(200, 200, 10);
+    Source source(200, 200, 0.001, 100e-9);
+    Screen screen(200, 200, 20, source);
 
-    auto& arr = source.array();
-
-    source.mark_points({{0, 0}, {0, 300}, {30, 300}, {30, 0}});
+    source.mark_points({{50, 0}, {150, 0}, {200, 100}, {100, 200}, {0,100}});
     
-    screen.evaluate_intensity(source);
+    screen.evaluate_intensity();
 
     std::ofstream out("buffer_image.csv");
     auto image = screen.normalized_log_sqr_intensity();
