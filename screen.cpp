@@ -15,17 +15,18 @@ class Screen final
     std::pair<size_t, size_t> shape_m;
     size_t max_threads_m;
     float scale_m;
+    const Source& source_m;
 
-    void evaluate_intensity_in_point(size_t, size_t, int, int, const Source&);
+    void evaluate_intensity_in_point(size_t, size_t, int, int);
 
-    void evaluate_intensity_in_row(size_t, const Source&);
+    void evaluate_intensity_in_row(size_t);
 
 public:
-    Screen(size_t, size_t, float, size_t);
+    Screen(size_t, size_t, float, const Source&, size_t);
 
     const std::pair<size_t, size_t>& size() const;
 
-    void evaluate_intensity(const Source&);
+    void evaluate_intensity();
 
     std::vector<std::vector<double>> normalized_intensity() const;
 
@@ -41,36 +42,36 @@ std::ostream& operator<< (std::ostream&, const std::vector<std::vector<double>>&
 
 
 
-Screen::Screen(size_t Nx, size_t Ny, float scale, size_t max_threads=4): 
-    field_m(Nx, std::vector<double>(Ny, 0)), shape_m(Nx, Ny), scale_m(scale), max_threads_m(max_threads) {}
+Screen::Screen(size_t Nx, size_t Ny, float scale, const Source& source, size_t max_threads=4): 
+    field_m(Nx, std::vector<double>(Ny, 0)), shape_m(Nx, Ny), scale_m(scale), source_m(source), max_threads_m(max_threads) {}
 
-void Screen::evaluate_intensity_in_point(size_t arr_y, size_t arr_z, int y, int z, const Source& s)
+void Screen::evaluate_intensity_in_point(size_t arr_y, size_t arr_z, int y, int z)
 {
     double ny, nz;
-    ny = y * 1.0 / shape_m.first * s.wavelength() / s.size().first * scale_m;
-    nz = z * 1.0 / shape_m.second * s.wavelength() / s.size().first * scale_m;
+    ny = y * 1.0 / shape_m.first * source_m.wavelength() / source_m.size().first * scale_m;
+    nz = z * 1.0 / shape_m.second * source_m.wavelength() / source_m.size().first * scale_m;
     double len = sqrt(1 + ny * ny + nz * nz);
     ny /= len;
     nz /= len;
 
     complex<double> field(0);
-    for (size_t i = 0; i < s.shape().first; ++i)
-        for (size_t j = 0; j < s.shape().second; ++j)
-            if (s[i][j]) {
-                double dist = ny * i / s.shape().first * s.size().first +
-                    nz * j / s.shape().second * s.size().second;
+    for (size_t i = 0; i < source_m.shape().first; ++i)
+        for (size_t j = 0; j < source_m.shape().second; ++j)
+            if (source_m[i][j]) {
+                double dist = ny * i / source_m.shape().first * source_m.size().first +
+                    nz * j / source_m.shape().second * source_m.size().second;
                 
-                field += std::exp(complex<double>(0, 1) * complex<double>(2 * M_PI / s.wavelength() * dist, 0));
+                field += std::exp(complex<double>(0, 1) * complex<double>(2 * M_PI / source_m.wavelength() * dist, 0));
             }
     field_m[arr_y][arr_z] = norm(field);
 }
 
-void Screen::evaluate_intensity_in_row(size_t i, const Source& source)
+void Screen::evaluate_intensity_in_row(size_t i)
 {
     for (size_t j = 0; j < shape_m.second; ++j) {
             evaluate_intensity_in_point(i, j,
                 static_cast<int>(i) - static_cast<int>(shape_m.first) / 2, 
-                static_cast<int>(j) - static_cast<int>(shape_m.second) / 2, source);
+                static_cast<int>(j) - static_cast<int>(shape_m.second) / 2);
         }
 }
 
@@ -80,12 +81,12 @@ const std::pair<size_t, size_t>& Screen::size() const
 }
 
 
-void Screen::evaluate_intensity(const Source& source)
+void Screen::evaluate_intensity()
 {
     std::thread threads[max_threads_m];
     for (size_t i = 0; i < shape_m.first; i += max_threads_m) {
         for (size_t th = 0; th < max_threads_m && i + th < shape_m.first; ++th)
-            threads[th] = std::thread(&Screen::evaluate_intensity_in_row, this, i + th, source);
+            threads[th] = std::thread(&Screen::evaluate_intensity_in_row, this, i + th);
         for (auto& th : threads) th.join(); 
     }  
 }
